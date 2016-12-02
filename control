@@ -1,0 +1,83 @@
+#!/bin/bash
+
+BASE_DIR=$(cd $(dirname $0); pwd)
+VAR_DIR=$BASE_DIR"/var/"
+BIN_DIR="/usr/bin/"
+APP="celery"
+PROGRAM=$BIN_DIR$APP
+LOG=$VAR_DIR"log"
+PID_FILE=$VAR_DIR$APP".pid"
+ARGS=""
+START_SLEEP=3
+STOP_SLEEP=3
+
+function start() {
+    echo $APP" is starting ..."
+    if [ -f $PID_FILE ]; then
+        echo $APP" is already running, pid is "`cat $PID_FILE`
+        exit
+    fi
+    
+    $PROGRAM $ARGS >$LOG 2>&1 &
+    sleep $START_SLEEP
+    if [ ! -f $PID_FILE ]; then
+        echo $APP" start failed"
+        exit
+    fi
+    echo $APP" is started, pid is "`cat $PID_FILE`
+}
+
+function stop() {
+    if [ ! -f $PID_FILE ]; then
+        echo $APP" is already stopped"
+        exit
+    fi
+    kill `cat $PID_FILE`
+    sleep $STOP_SLEEP
+    ps axu | awk '{print $2}' | grep $(cat $PID_FILE)
+    if [ $0 -ne 0 ]; then
+        echo $APP" is failed to stop"
+        exit
+    fi
+    rm $PID_FILE
+}
+
+function restart() {
+    stop
+    start
+}
+
+function tail() {
+    tail -f $LOG
+}
+
+function help() {
+    echo "usage: "$APP" start|stop|restart|help"
+}
+
+function status() {
+    if [ ! -f $PID_FILE ]; then
+        echo $APP" is stopped"
+    else
+        ps axu | awk '{print $2}' | grep $(cat $PID_FILE)
+        if [ $0 -ne 0]; then
+            echo $APP" is stopped, but exit unnormally"
+        else
+            echo $APP" is running, pid is "`cat $PID_FILE`
+        fi
+    fi
+}
+
+if [ "X$1" == "X" ]; then
+    help
+elif [ "X$1" == "Xstop" ]; then
+    stop
+elif [ "X$1" == "Xstart" ]; then
+    start
+elif [ "X$1" == "Xrestart" ]; then
+    restart
+elif [ "X$1" == "Xtail" ]; then
+    tail
+elif [ "X$1" == "Xstatus" ]; then
+    status
+fi
