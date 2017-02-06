@@ -28,6 +28,7 @@ function start() {
 }
 
 function stop() {
+    echo $APP" is stopping ..."
     if [ ! -f $PID_FILE ]; then
         echo $APP" is already stopped"
         exit
@@ -35,11 +36,12 @@ function stop() {
     kill `cat $PID_FILE`
     sleep $STOP_SLEEP
     ps axu | awk '{print $2}' | grep $(cat $PID_FILE)
-    if [ $0 -ne 0 ]; then
+    if [ $? -ne 0 ]; then
         echo $APP" is failed to stop"
         exit
     fi
     rm $PID_FILE
+    echo $APP" is stopped ..."
 }
 
 function restart() {
@@ -60,7 +62,7 @@ function status() {
         echo $APP" is stopped"
     else
         ps axu | awk '{print $2}' | grep $(cat $PID_FILE)
-        if [ $0 -ne 0]; then
+        if [ $? -ne 0]; then
             echo $APP" is stopped, but exit unnormally"
         else
             echo $APP" is running, pid is "`cat $PID_FILE`
@@ -80,4 +82,6 @@ elif [ "X$1" == "Xtail" ]; then
     tail
 elif [ "X$1" == "Xstatus" ]; then
     status
+else
+    help
 fi
